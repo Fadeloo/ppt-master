@@ -117,7 +117,7 @@ A/B describe a hero or a local single-subject region; C/D are hero-page composit
 
 A sheet generates compatible transparent **illustration**, **illustrated-icon**, or **decorative lettering** elements sharing rendering, deck-color treatment, and finish; subjects, silhouettes, weights, and jobs may differ, and SVG composes after slicing. Lettering is stable Layer 1 artwork, never page copy turned into an image.
 
-**Default — batch compatible elements; split when separate generation improves the result**: group illustrated-icon cues normally; group lettering by compatible letterform character and treatment (not font name); split for style, geometry, detail, quality, or semantic precision. A single element may use a keyed `1x1` sheet. Full-canvas or opaque images take the normal §4.1 path.
+**Default — batch compatible elements; split when separate generation improves the result**: group illustrated-icon cues normally; group lettering by compatible letterform character and treatment (not font name); split for style, geometry, detail, quality, or semantic precision. A single element may use a keyed `1x1` sheet. Full-canvas or opaque images take the normal §4.1 path; several opaque photos for a multi-cell layout may share one sheet under the same contract, sliced by `--grid` with `--inset` and no key color, `--trim`, or `--alpha`.
 
 **Hard rule — a sheet is a generation source, not a slide asset**: never referenced from SVG; out of `spec_lock.md images` in Default, generation-only in Quick's context and manifest; only sliced element rows are placed.
 
@@ -148,21 +148,24 @@ Shape families that cannot share a roomy grid take separate sheets; coherence co
 
 | Row | Content |
 |---|---|
-| **Sheet row** | `Acquire Via: ai`, `Type: Illustration Sheet`, named as the slice source with intent, cell shape, and purpose (`Reference: reusable title/corner illustration family`, `illustrated-icon set: cues = ...`, or `decorative lettering set: exact strings = ...`). Step 5 generates it; it is never placed; Image_Generator resolves its aspect ratio, grid, and slice command. Its manifest item carries `slice_grid` and `slice_names` — the comma-separated basenames are the complete required output set |
+| **Sheet row** | `Acquire Via: ai`, `Type: Illustration Sheet` (the §VIII column; the manifest item omits `type`), named as the slice source with intent, cell shape, and purpose (`Reference: reusable title/corner illustration family`, `illustrated-icon set: cues = ...`, or `decorative lettering set: exact strings = ...`). Step 5 generates it; it is never placed; Image_Generator resolves its aspect ratio, grid, and slice command. Its manifest item carries `slice_grid` and `slice_names` — the comma-separated basenames are the complete required output set |
 | **Element rows** | One per used element, `Acquire Via: slice`, filename matching `--names`, `Reference` naming the parent and cell, listed in the placeable authority normally with `crop=no-crop` (tight slices use fit, not cover-crop), `Type: Illustrated icon` for a compact cue (never an SVG library entry), reusable across pages, each carrying an owner-resolved layout recommendation, dimensions filled after slicing by `analyze_images.py` |
 
 ```bash
-SHEET_KEY_HEX="#00FF00"  # example only; choose a key absent from every element/effect
+SHEET_KEY_HEX="#00FF00"  # the key stated in the prompt; example only, choose a hue absent from every element/effect
 python3 scripts/slice_images.py <project>/images/illus_sheet.png --grid 2x3 \
     --names team,product,customer,growth,risk,vision --trim --alpha \
     --bg "${SHEET_KEY_HEX}" --strict-alpha
+# Generated sheets arrive through JPEG, so the ground is never exactly the pure
+# key: when every finding is measured key noise the tool retries once with the
+# tolerance it measured; content touching a cell edge still fails and stays yours.
 ```
 
 `--names` count equals `rows*cols`; `--strict-alpha` writes nothing on an incomplete cut. Three quality constraints:
 
 | Constraint | Rule |
 |---|---|
-| **Strict key recovery** | Measure the smallest channel distance from any element pixel to the key first; raise `--tolerance` only enough to absorb measured flat-field drift and keep it below that distance, `--inset` for an isolated outer gutter or for grid lines the model drew between cells (its most frequent use — trim the gutter, never an element), and regenerate or enlarge when an effect reaches an edge. A `1x1` lettering sheet whose glyph touches the outer key border fails the same gate: pad the sheet with a key-colored border (about 10%) before slicing, or regenerate with more margin |
+| **Strict key recovery** | Measure the smallest channel distance from any element pixel to the key first; raise `--tolerance` only enough to absorb measured flat-field drift and keep it below that distance, `--inset` for an isolated outer gutter or for grid lines the model drew between cells (its most frequent use — trim the gutter, never an element; wide lettering bands take `--inset 0.01,0.03` style H,V values so the horizontal line goes without cutting into the glyphs), and regenerate or enlarge when an effect reaches an edge. A `1x1` lettering sheet whose glyph touches the outer key border fails the same gate: pad the sheet with a key-colored border (about 10%) before slicing, or regenerate with more margin |
 | **Clean isolated cells** | Fused cells, scene backgrounds, or flourishes crossing a cell make the sheet unusable; re-rolls follow only a strict keying failure or user/preview evidence, never taste |
 | **Enough source pixels** | Each cell at least 1.5–2× its display size (`1K` small accents, `2K` medium, `4K` large or enlarged) |
 
@@ -237,7 +240,7 @@ Match facial detail, anatomy, texture, and realism to the rendering and the row'
 
 **Hard rule — decide by editability, not model capability**: Layer 1 text can never be edited, corrected, searched, restyled, or reflowed. Text that is part of the artwork and stable — decorative lettering, a wordmark, a hand-lettered phrase, figure-internal identifiers — may be Layer 1. Anything that must stay exact, searchable, editable, or may be reworded is Layer 2, whatever `text_policy` says: authoritative titles, chrome, navigation, footer, bullets, captions, data values. Bake title-like wording only when the approved plan treats those exact characters as stable artwork. When the headline must stay editable, use Primitive D and overlay it.
 
-**Hard rule — never pre-judge by script or length**: never push text to SVG, shorten a headline, or downgrade `embedded` to `none` on the assumption that a script or long string "won't render"; a multi-word phrase or two-line lockup qualifies exactly as one word does. Name the exact characters literally; do not re-read the generated image to verify them. Exception — CJK lettering: when `text_policy: embedded` and the string contains CJK characters, one look at the generated file is allowed, answering only whether the characters match the approved string exactly; a mismatch regenerates that item, and the look never reopens selection or taste; after three regenerations that still miss the same character, stop — keep that mark as native text, record the fallback in the notes, and never explain it on the page.
+**Hard rule — never pre-judge by script or length**: never push text to SVG, shorten a headline, or downgrade `embedded` to `none` on the assumption that a script or long string "won't render"; a multi-word phrase or two-line lockup qualifies exactly as one word does. Name the exact characters literally; do not re-read the generated image to verify them. Exception — non-Latin lettering: when `text_policy: embedded` and the string contains CJK, Arabic, Indic, Thai, or other non-Latin characters, one look at the generated file is allowed, answering only whether the characters match the approved string exactly; a mismatch regenerates that item, and the look never reopens selection or taste; after three regenerations that still miss the same character, stop — keep that mark as native text, record the fallback in the notes, and never explain it on the page.
 
 **Reference — controlled, deck-aligned artistic authorship** (high expression on user request or a confirmed direction): give the model the exact string, communication role, placement/background relationship, deck identity, relative weight, and desired energy; the rendering, semantic colors, mood, and page hierarchy define the envelope. Glyph-native expression carries identity through silhouette, stroke construction, internal material/texture, contour-bound depth and light, and composition. Literal topic illustrations or detached decoration compete with the glyph; a lettering-plus-illustration lockup needs an explicit request or confirmed direction. Within the treatment let the model combine or omit gesture, material, dimensionality, texture, lighting, and hierarchy — possibility space, not a recipe. Never flatten the art to ease extraction (§4.3's gates protect delivery); when fit is uncertain use the lower density; keep a multi-line lockup as one element when its hierarchy is part of the art.
 
